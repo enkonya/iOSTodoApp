@@ -11,16 +11,10 @@ import RealmSwift
 
 class MainViewController: UITableViewController{
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-    }
-    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let items : Results<ToDoListItem>
         do{
             let realm = try Realm()
-            items = realm.objects(ToDoListItem.self)
-            return items.count
+            return realm.objects(ToDoListItem.self).count
         }
         catch{
             return 0;
@@ -36,7 +30,9 @@ class MainViewController: UITableViewController{
             cell.textLabel!.text = item.name
             cell.accessoryType = item.done == true ? .checkmark : .none
         }
-        catch{}
+        catch{
+            print("Unable to initialize realm")
+        }
         
         return cell
     }
@@ -51,7 +47,11 @@ class MainViewController: UITableViewController{
                 item.done = !item.done
             }
         }
-        catch{}
+        catch{
+            print("Unable to initialize realm")
+        }
+        
+        tableView.deselectRow(at: indexPath, animated: true)
     }
     
     //ability to edit row in table views
@@ -74,7 +74,7 @@ class MainViewController: UITableViewController{
             }
         }
         catch{
-            
+           print("Unable to initialize realm")
         }
     }
 
@@ -88,7 +88,7 @@ class MainViewController: UITableViewController{
         alertVC.addAction(cancelAction)
         
         let addAction = UIAlertAction(title: "Add", style: .default){ result -> Void in
-            let todoItemTextField = alertVC.textFields?.first as? UITextField
+            let todoItemTextField = alertVC.textFields?.first
             
             //creating a new item to add to realm
             let newTodoListItem = ToDoListItem()
@@ -104,7 +104,7 @@ class MainViewController: UITableViewController{
                 self.tableView.insertRows(at: [IndexPath.init(row: count, section: 0)], with: .automatic)
             }
             catch{
-                
+                print("Unable to initialize realm")
             }
         }
         
