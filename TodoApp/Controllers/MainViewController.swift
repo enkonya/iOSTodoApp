@@ -33,7 +33,6 @@ class MainViewController: UITableViewController{
         catch{
             print("Unable to initialize realm")
         }
-        
         return cell
     }
     
@@ -83,7 +82,7 @@ class MainViewController: UITableViewController{
         //alert view controller collects input from user
         let alertVC = UIAlertController(title: "New Task", message: "Enter task name", preferredStyle: .alert)
         alertVC.addTextField(configurationHandler: nil)
-        
+
         let cancelAction = UIAlertAction.init(title: "Cancel", style: .destructive, handler: nil)
         alertVC.addAction(cancelAction)
         
