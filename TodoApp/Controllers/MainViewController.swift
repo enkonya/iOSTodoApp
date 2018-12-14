@@ -17,6 +17,7 @@ class MainViewController: UITableViewController{
             return realm.objects(ToDoListItem.self).count
         }
         catch{
+            print("Unable to initialize realm")
             return 0;
         }
     }
@@ -45,12 +46,13 @@ class MainViewController: UITableViewController{
             try realm.write{
                 item.done = !item.done
             }
+            
+            tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadRows(at: [indexPath], with: .automatic)
         }
         catch{
             print("Unable to initialize realm")
         }
-        
-        tableView.deselectRow(at: indexPath, animated: true)
     }
     
     //ability to edit row in table views
