@@ -8,6 +8,9 @@ target 'TodoApp' do
   # Pods for TodoApp
   pod 'RealmSwift'
 
+  # Pods for SwiftLint
+  pod 'SwiftLint'
+
   target 'TodoAppTests' do
     inherit! :search_paths
     # Pods for testing
