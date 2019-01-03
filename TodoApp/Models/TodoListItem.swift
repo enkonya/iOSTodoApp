@@ -12,5 +12,8 @@ import RealmSwift
 class ToDoListItem: Object{
     //@objc dynamic allows realm to monitor changes in property values
     @objc dynamic var name = "";
-    @objc dynamic var done = false;
+    @objc dynamic var desc = "";
+    @objc dynamic var isComplete = false;
+    @objc dynamic var dateEntered: Date?
+    @objc dynamic var dateCompleted: Date?
 }
