@@ -1,4 +1,5 @@
 PODS:
+  - EmptyDataSet-Swift (4.2.0)
   - Realm (3.12.0):
     - Realm/Headers (= 3.12.0)
   - Realm/Headers (3.12.0)
@@ -6,17 +7,20 @@ PODS:
     - Realm (= 3.12.0)
 
 DEPENDENCIES:
+  - EmptyDataSet-Swift (~> 4.2.0)
   - RealmSwift
 
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
+    - EmptyDataSet-Swift
     - Realm
     - RealmSwift
 
 SPEC CHECKSUMS:
+  EmptyDataSet-Swift: 1fa0b35f530a35f852ecb2b53564728b0c300aaf
   Realm: cdaef23c4ddb36ab1ddffed23f5a7f3332fc5585
   RealmSwift: 5576324033f0aa5ef1e0a839a3da2281dff47a7f
 
-PODFILE CHECKSUM: 0a4a6e40caf8a3c29a367793b73c90739028b463
+PODFILE CHECKSUM: 3f9fbb94e724abb87864f8e4a453e609e3e8b822
 
 COCOAPODS: 1.5.3

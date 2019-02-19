@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import EmptyDataSet_Swift
 
 class MainViewController: UITableViewController {
     var notificationToken: NotificationToken?
@@ -40,6 +41,10 @@ class MainViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.tableView.emptyDataSetSource = self
+        self.tableView.emptyDataSetDelegate = self
+        
         createTaskButton.action = #selector(presentCreateTask)
         createTaskButton.target = self
     }
@@ -47,7 +52,8 @@ class MainViewController: UITableViewController {
     //Opens up view to create a new task
     @objc func presentCreateTask(_ sender: UIBarButtonItem) {
         let storyBoard = UIStoryboard.init(name: "Main", bundle: nil)
-        if let createVC = storyBoard.instantiateViewController(withIdentifier: "createTaskView") as? CreateTaskViewController {
+        if let createVC =
+            storyBoard.instantiateViewController(withIdentifier: "createTaskView") as? CreateTaskViewController {
             createVC.delegate = self
             let nvc = UINavigationController(rootViewController: createVC)
             self.present(nvc, animated: true, completion: nil)
@@ -73,26 +79,7 @@ class MainViewController: UITableViewController {
                     sectionTasks[sectionTitle] = [ToDoListItem]()
                 }
                 
-                switch sectionTitle {
-                case .older:
-                    if let olderResults = results?.filter("dateToComplete < %@", todaysDate) {
-                        fillSection(forSectionTitle: sectionTitle, withTasks: olderResults)
-                    }
-                case .today:
-                    if let todayResults = results?.filter("dateToComplete = %@", todaysDate) {
-                        fillSection(forSectionTitle: sectionTitle, withTasks: todayResults)
-                    }
-                case .nextseven:
-                    if let nextSevenDaysResults = results?.filter("dateToComplete > %@ AND dateToComplete <= %@",
-                                                                  todaysDate, sevenDaysAwayDate) {
-                        fillSection(forSectionTitle: sectionTitle, withTasks: nextSevenDaysResults)
-                    }
-                case .upcoming:
-                    if let upcomingResults = results?.filter("dateToComplete > %@", sevenDaysAwayDate) {
-                        fillSection(forSectionTitle: sectionTitle, withTasks: upcomingResults)
-                    }
-                }
-                
+                fillSectionHelper(sectionTitle: sectionTitle)
             })
             
             // Observe Results Notifications
@@ -106,7 +93,7 @@ class MainViewController: UITableViewController {
                     tableView.reloadData()
                 case .update(_, _, let insertions, let modifications):
                     tableView.beginUpdates()
-                    tableView.insertRows(at: insertions.map{ IndexPath(row: $0, section: 0) }, with: .automatic)
+                    tableView.insertRows(at: insertions.map { IndexPath(row: $0, section: 0) }, with: .automatic)
                     tableView.reloadRows(at: modifications.map { IndexPath(row: $0, section: 0) }, with: .automatic)
                     
                     //deleting rows and empty sections
@@ -138,25 +125,47 @@ class MainViewController: UITableViewController {
         }
     }
     
-    func fillSection(forSectionTitle sectionTitle: SectionTitle, withTasks sectionItems: Results<ToDoListItem>) {
+    fileprivate func fillSectionHelper(sectionTitle: SectionTitle) {
+        switch sectionTitle {
+        case .older:
+            if let olderResults = results?.filter("dateToComplete < %@", todaysDate) {
+                fillSection(forSectionTitle: sectionTitle, withTasks: olderResults)
+            }
+        case .today:
+            if let todayResults = results?.filter("dateToComplete = %@", todaysDate) {
+                fillSection(forSectionTitle: sectionTitle, withTasks: todayResults)
+            }
+        case .nextseven:
+            if let nextSevenDaysResults = results?.filter("dateToComplete > %@ AND dateToComplete <= %@",
+                                                          todaysDate, sevenDaysAwayDate) {
+                fillSection(forSectionTitle: sectionTitle, withTasks: nextSevenDaysResults)
+            }
+        case .upcoming:
+            if let upcomingResults = results?.filter("dateToComplete > %@", sevenDaysAwayDate) {
+                fillSection(forSectionTitle: sectionTitle, withTasks: upcomingResults)
+            }
+        }
+    }
+    
+    fileprivate func fillSection(forSectionTitle sectionTitle: SectionTitle,
+                                 withTasks sectionItems: Results<ToDoListItem>) {
         if !sectionItems.isEmpty {
             sectionTasks[sectionTitle] = Array(sectionItems)
             availableSections.append(sectionTitle)
         }
     }
     
-    
-    func getItem(from indexPath: IndexPath) -> ToDoListItem? {
+    fileprivate func getItem(from indexPath: IndexPath) -> ToDoListItem? {
         let sectionTitle = availableSections[indexPath.section]
         let sectionItems = sectionTasks[sectionTitle]
-        
+    
         return sectionItems?[indexPath.row]
     }
-    
+
     override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 44.0
     }
-    
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         notificationToken?.invalidate()
@@ -179,7 +188,6 @@ class MainViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell")
         
         cell?.textLabel?.text = self.getItem(from: indexPath)?.name ?? ""
-        //        cell?.accessoryType = item?.isComplete == true ? .checkmark : .none
         
         return cell ?? UITableViewCell()
     }
@@ -261,3 +269,35 @@ extension MainViewController: TaskCompletionDelegate {
         }
     }
 }
+
+extension MainViewController: EmptyDataSetSource {
+    func title(forEmptyDataSet scrollView: UIScrollView) -> NSAttributedString? {
+        let noTasksText = String(format: "No %@ Tasks",
+                                 segmentedControl?.selectedSegmentIndex == 0 ? "Open" : "Completed")
+        
+        let paragraph = NSMutableParagraphStyle()
+        
+        paragraph.lineBreakMode = .byWordWrapping
+        paragraph.alignment = .center
+        
+        let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 25.0),
+                          NSAttributedString.Key.paragraphStyle: paragraph]
+        return NSAttributedString(string: noTasksText, attributes: attributes)
+    }
+    
+    func description(forEmptyDataSet scrollView: UIScrollView) -> NSAttributedString? {
+        let noTasksDesc = "To create a task, hit the + button on the top right corner."
+        
+        let paragraph = NSMutableParagraphStyle()
+        
+        paragraph.lineBreakMode = .byWordWrapping
+        paragraph.alignment = .center
+        
+        let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15.0),
+                          NSAttributedString.Key.paragraphStyle: paragraph]
+        
+        return NSAttributedString(string: noTasksDesc, attributes: attributes)
+    }
+}
+
+extension MainViewController: EmptyDataSetDelegate {}
