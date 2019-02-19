@@ -17,7 +17,7 @@ class CreateTaskViewController: UIViewController {
 
     weak var delegate: TaskCompletionDelegate?
     fileprivate var datePicker = UIDatePicker()
-    
+
     fileprivate lazy var dateFormatter: DateFormatter = {
         let df = DateFormatter()
         df.dateStyle = .medium
@@ -29,23 +29,23 @@ class CreateTaskViewController: UIViewController {
         let today = Calendar.current.startOfDay(for: Date())
         return String(format: "Today, %@", dateFormatter.string(from: today))
     }
-    
+
     fileprivate var selectedDate: Date {
         return Calendar.current.startOfDay(for: datePicker.date)
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         datePicker.datePickerMode = .date
         datePicker.minimumDate = Calendar.current.startOfDay(for: Date())
         datePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
-        
+
         dateTextField.text = todaysDate
         dateTextField.inputView = datePicker
         dateTextField.inputAccessoryView = datePickerToolbar
     }
-    
+
     var datePickerToolbar: UIToolbar = {
         let toolbar = UIToolbar()
         let cancelBarButtonItem = UIBarButtonItem(title: "Cancel", style: .plain,
