@@ -9,11 +9,11 @@
 import Foundation
 import RealmSwift
 
-class ToDoListItem: Object{
+class ToDoListItem: Object {
     //@objc dynamic allows realm to monitor changes in property values
-    @objc dynamic var name = "";
-    @objc dynamic var desc = "";
-    @objc dynamic var isComplete = false;
-    @objc dynamic var dateEntered: Date?
+    @objc dynamic var name: String = ""
+    @objc dynamic var desc: String = ""
+    @objc dynamic var isComplete: Bool = false
+    @objc dynamic var dateToComplete: Date?
     @objc dynamic var dateCompleted: Date?
 }
