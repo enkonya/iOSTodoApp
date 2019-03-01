@@ -18,11 +18,11 @@ class MainViewController: UITableViewController {
     var sectionTasks = [SectionTitle: [ToDoListItem]]()
     var updatedSection: IndexPath?
 
-    var todaysDate: Date = Calendar.current.startOfDay(for: Date())
-    var sevenDaysAwayDate: Date {
+    lazy var todaysDate: Date = Calendar.current.startOfDay(for: Date())
+    lazy var sevenDaysAwayDate: Date = {
         let tomorrowsDate = Calendar.current.date(byAdding: .day, value: 1, to: todaysDate )
         return Calendar.current.date(byAdding: .day, value: 7, to: tomorrowsDate!)!
-    }
+    }()
 
     @IBOutlet weak var createTaskButton: UIBarButtonItem!
 
@@ -91,11 +91,8 @@ class MainViewController: UITableViewController {
                 case .initial:
                     // Results are now populated and can be accessed without blocking the UI
                     tableView.reloadData()
-                case .update(_, _, let insertions, let modifications):
+                case .update:
                     tableView.beginUpdates()
-                    tableView.insertRows(at: insertions.map { IndexPath(row: $0, section: 0) }, with: .automatic)
-                    tableView.reloadRows(at: modifications.map { IndexPath(row: $0, section: 0) }, with: .automatic)
-
                     //deleting rows and empty sections
                     if let indexPath = strongSelf.updatedSection {
                         tableView.deleteRows(at: [indexPath], with: .automatic)
@@ -103,11 +100,9 @@ class MainViewController: UITableViewController {
                         let updatedSectionTitle: SectionTitle = strongSelf.availableSections[indexPath.section]
                         strongSelf.sectionTasks[updatedSectionTitle]?.remove(at: indexPath.row)
 
-                        if let sectionItems = strongSelf.sectionTasks[updatedSectionTitle] {
-                            if sectionItems.isEmpty {
+                        if let sectionItems = strongSelf.sectionTasks[updatedSectionTitle], sectionItems.isEmpty {
                                 strongSelf.availableSections.remove(at: indexPath.section)
                                 tableView.deleteSections(IndexSet.init(integer: indexPath.section), with: .automatic)
-                            }
                         }
                     }
                     tableView.endUpdates()
@@ -185,28 +180,54 @@ class MainViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell")
+        guard let taskItem = self.getItem(from: indexPath) else { return UITableViewCell() }
 
-        cell?.textLabel?.text = self.getItem(from: indexPath)?.name ?? ""
+        let cell = tableView.dequeueReusableCell(withIdentifier: "TaskCell") as? TaskTableViewCell
+
+        cell?.taskName.text = taskItem.name
+        cell?.taskDate.text = taskItem.formatDateToComplete()
 
         return cell ?? UITableViewCell()
     }
 
-    //marks and unmarks as done
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if let item = self.getItem(from: indexPath) {
-            do {
-                let realm = try Realm()
-                try realm.write {
-                    item.isComplete = !item.isComplete
-                    item.dateCompleted = Date()
-                }
-                updatedSection = indexPath
-            } catch {
-                print("Unable to initialize realm")
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+
+        if segue.identifier == "segue" {
+            if let indexPath = self.tableView.indexPathForSelectedRow {
+                let detailVC = segue.destination as? TaskDetailVC
+                detailVC?.taskItem = getItem(from: indexPath)
             }
         }
-        tableView.deselectRow(at: indexPath, animated: true)
+    }
+
+    //marks and unmarks as done
+    override func tableView(_ tableView: UITableView,
+                            leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath)
+        -> UISwipeActionsConfiguration? {
+
+            let actionTitle: String = segmentedControl?.selectedSegmentIndex == 0 ?
+                                      "Done" : "Not Done"
+
+            let completedAction = UIContextualAction(style: .normal,
+                                                  title: actionTitle) { (_, _, completionHandler) in
+                if let item = self.getItem(from: indexPath) {
+                    do {
+                        let realm = try Realm()
+                        try realm.write {
+                            item.isComplete = !item.isComplete
+                            item.dateCompleted = Date()
+                        }
+                        self.updatedSection = indexPath
+                    } catch {
+                        print("Unable to initialize realm")
+                    }
+                }
+                completionHandler(true)
+            }
+            completedAction.backgroundColor = UIColor(red: 89/255, green: 87/255, blue: 153/255, alpha: 1)
+            let configuration = UISwipeActionsConfiguration(actions: [completedAction])
+
+            return configuration
     }
 
     //ability to edit row in table views
@@ -240,10 +261,7 @@ enum SectionTitle: CaseIterable, CustomStringConvertible {
         case .older:
             return "Older"
         case .today:
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateStyle = .long
-            dateFormatter.timeStyle = .none
-            return String(format: "Today, %@", dateFormatter.string(from: Date()))
+            return ToDoListItem.format(date: Date())
         case .nextseven:
             return "Next 7 Days"
         case .upcoming:
@@ -254,10 +272,9 @@ enum SectionTitle: CaseIterable, CustomStringConvertible {
 
 extension MainViewController: TaskCompletionDelegate {
     func onDone(taskName: String, taskDesc: String, dateToComplete: Date) {
-        let newTodoListItem = ToDoListItem()
-        newTodoListItem.name = taskName
-        newTodoListItem.desc = taskDesc
-        newTodoListItem.dateToComplete = dateToComplete
+        let newTodoListItem = ToDoListItem(name: taskName,
+                                           desc: taskDesc,
+                                           dateToComplete: dateToComplete)
 
         do {
             let realm = try Realm()
