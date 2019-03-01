@@ -15,20 +15,10 @@ class CreateTaskViewController: UIViewController {
     @IBOutlet weak var descriptionTextField: UITextField!
     @IBOutlet weak var dateTextField: UITextField!
 
+    @IBOutlet weak var saveButton: UIBarButtonItem!
+
     weak var delegate: TaskCompletionDelegate?
     fileprivate var datePicker = UIDatePicker()
-
-    fileprivate lazy var dateFormatter: DateFormatter = {
-        let df = DateFormatter()
-        df.dateStyle = .medium
-        df.timeStyle = .none
-        return df
-    }()
-
-    fileprivate var todaysDate: String {
-        let today = Calendar.current.startOfDay(for: Date())
-        return String(format: "Today, %@", dateFormatter.string(from: today))
-    }
 
     fileprivate var selectedDate: Date {
         return Calendar.current.startOfDay(for: datePicker.date)
@@ -37,16 +27,25 @@ class CreateTaskViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        saveButton.isEnabled = false
+        nameTextField.addTarget(self, action: #selector(taskNameTextFieldCheck), for: .editingChanged)
+
         datePicker.datePickerMode = .date
         datePicker.minimumDate = Calendar.current.startOfDay(for: Date())
         datePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
 
-        dateTextField.text = todaysDate
+        dateTextField.text = ToDoListItem.format(date: Date())
         dateTextField.inputView = datePicker
         dateTextField.inputAccessoryView = datePickerToolbar
     }
 
-    var datePickerToolbar: UIToolbar = {
+    //task name is required -- disables/enables save button
+    @objc fileprivate func taskNameTextFieldCheck(sender: UITextField) {
+        let taskNameTrimmed: String = sender.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        saveButton.isEnabled = !taskNameTrimmed.isEmpty ? true : false
+    }
+
+    fileprivate var datePickerToolbar: UIToolbar = {
         let toolbar = UIToolbar()
         let cancelBarButtonItem = UIBarButtonItem(title: "Cancel", style: .plain,
                                                   target: self, action: #selector(hideDatePicker))
@@ -66,15 +65,11 @@ class CreateTaskViewController: UIViewController {
         return toolbar
     }()
 
-    @objc func datePickerChanged() {
-        if selectedDate == Calendar.current.startOfDay(for: Date()) {
-            dateTextField.text = todaysDate
-        } else {
-            dateTextField.text = dateFormatter.string(for: selectedDate)
-        }
+    @objc fileprivate func datePickerChanged() {
+        dateTextField.text = ToDoListItem.format(date: selectedDate)
     }
 
-    @objc func hideDatePicker() {
+    @objc fileprivate func hideDatePicker() {
         self.view.endEditing(true)
     }
 
