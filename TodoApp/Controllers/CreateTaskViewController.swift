@@ -28,7 +28,6 @@ class CreateTaskViewController: UIViewController {
         super.viewDidLoad()
 
         saveButton.isEnabled = false
-        nameTextField.addTarget(self, action: #selector(taskNameTextFieldCheck), for: .editingChanged)
 
         datePicker.datePickerMode = .date
         datePicker.minimumDate = Calendar.current.startOfDay(for: Date())
@@ -39,8 +38,7 @@ class CreateTaskViewController: UIViewController {
         dateTextField.inputAccessoryView = datePickerToolbar
     }
 
-    //task name is required -- disables/enables save button
-    @objc fileprivate func taskNameTextFieldCheck(sender: UITextField) {
+    @IBAction func taskNameTextChanged(_ sender: UITextField) {
         let taskNameTrimmed: String = sender.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         saveButton.isEnabled = !taskNameTrimmed.isEmpty ? true : false
     }

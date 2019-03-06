@@ -18,11 +18,11 @@ class MainViewController: UITableViewController {
     var sectionTasks = [SectionTitle: [ToDoListItem]]()
     var updatedSection: IndexPath?
 
-    lazy var todaysDate: Date = Calendar.current.startOfDay(for: Date())
-    lazy var sevenDaysAwayDate: Date = {
+    var todaysDate: Date = Calendar.current.startOfDay(for: Date())
+    var sevenDaysAwayDate: Date {
         let tomorrowsDate = Calendar.current.date(byAdding: .day, value: 1, to: todaysDate )
         return Calendar.current.date(byAdding: .day, value: 7, to: tomorrowsDate!)!
-    }()
+    }
 
     @IBOutlet weak var createTaskButton: UIBarButtonItem!
 

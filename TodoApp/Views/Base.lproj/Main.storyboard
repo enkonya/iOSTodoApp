@@ -19,7 +19,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
                         <color key="sectionIndexBackgroundColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                        <view key="tableHeaderView" contentMode="scaleToFill" id="0K5-QK-0M6">
+                        <view key="tableHeaderView" contentMode="scaleToFill" id="0K5-QK-0M6" userLabel="Tabs">
                             <rect key="frame" x="0.0" y="0.0" width="414" height="44"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
                             <subviews>
@@ -52,13 +52,13 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Task Title Goes Here" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Jho-C7-d5A">
-                                            <rect key="frame" x="20" y="9.6666666666666643" width="356" height="19"/>
+                                            <rect key="frame" x="20" y="8" width="149.66666666666666" height="19"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                             <nil key="textColor"/>
                                             <nil key="highlightedColor"/>
                                         </label>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Thurs, January 16, 2020" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oaJ-ww-G6r">
-                                            <rect key="frame" x="20" y="32.666666666666664" width="356" height="17"/>
+                                            <rect key="frame" x="20" y="31" width="156.66666666666666" height="17"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                             <color key="textColor" red="0.43529411759999997" green="0.4431372549" blue="0.47450980390000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                             <nil key="highlightedColor"/>
@@ -66,12 +66,9 @@
                                     </subviews>
                                     <constraints>
                                         <constraint firstItem="Jho-C7-d5A" firstAttribute="leading" secondItem="3sz-yy-V0P" secondAttribute="leading" constant="20" id="6UO-If-LDE"/>
-                                        <constraint firstAttribute="trailing" secondItem="oaJ-ww-G6r" secondAttribute="trailing" id="RSR-Jq-H5h"/>
                                         <constraint firstItem="oaJ-ww-G6r" firstAttribute="leading" secondItem="Jho-C7-d5A" secondAttribute="leading" id="WuD-sI-xmO"/>
-                                        <constraint firstItem="Jho-C7-d5A" firstAttribute="top" secondItem="3sz-yy-V0P" secondAttribute="top" constant="9.6666666666666661" id="XI9-nz-1iA"/>
-                                        <constraint firstAttribute="trailing" secondItem="Jho-C7-d5A" secondAttribute="trailing" id="bbi-j2-hwi"/>
+                                        <constraint firstItem="Jho-C7-d5A" firstAttribute="top" secondItem="3sz-yy-V0P" secondAttribute="top" constant="8" id="XI9-nz-1iA"/>
                                         <constraint firstItem="oaJ-ww-G6r" firstAttribute="top" secondItem="Jho-C7-d5A" secondAttribute="bottom" constant="4" id="puk-gr-aum"/>
-                                        <constraint firstItem="oaJ-ww-G6r" firstAttribute="width" secondItem="Jho-C7-d5A" secondAttribute="height" multiplier="137:19" constant="219" id="s94-nk-jSe"/>
                                     </constraints>
                                 </tableViewCellContentView>
                                 <connections>
@@ -124,6 +121,9 @@
                                 <nil key="textColor"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences" returnKeyType="next" enablesReturnKeyAutomatically="YES"/>
+                                <connections>
+                                    <action selector="taskNameTextChanged:" destination="A56-sn-qFb" eventType="editingChanged" id="Ws9-CJ-KP9"/>
+                                </connections>
                             </textField>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Description" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qDH-tK-Kuc">
                                 <rect key="frame" x="20" y="204" width="88" height="21"/>
