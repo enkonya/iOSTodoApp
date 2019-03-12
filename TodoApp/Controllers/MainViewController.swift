@@ -17,6 +17,7 @@ class MainViewController: UITableViewController {
     var availableSections = [SectionTitle]()
     var sectionTasks = [SectionTitle: [ToDoListItem]]()
     var updatedSection: IndexPath?
+    var searchBar: UISearchBar?
 
     var todaysDate: Date = Calendar.current.startOfDay(for: Date())
     var sevenDaysAwayDate: Date {
@@ -24,16 +25,20 @@ class MainViewController: UITableViewController {
         return Calendar.current.date(byAdding: .day, value: 7, to: tomorrowsDate!)!
     }
 
-    @IBOutlet weak var createTaskButton: UIBarButtonItem!
-
+    @IBOutlet var searchBarButton: UIBarButtonItem!
     @IBOutlet weak var segmentedControl: UISegmentedControl?
 
     @IBAction func indexChanged(_ sender: UISegmentedControl) {
+        var queryText: String?
+        if let text = self.searchBar?.text, !text.isEmpty {
+            queryText = text
+        }
+
         switch sender.selectedSegmentIndex {
         case 0:
-            setupRealmDataSource(false)
+            setupRealmDataSource(false, queryText)
         case 1:
-            setupRealmDataSource(true)
+            setupRealmDataSource(true, queryText)
         default:
             break
         }
@@ -41,16 +46,23 @@ class MainViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         self.tableView.emptyDataSetSource = self
         self.tableView.emptyDataSetDelegate = self
 
-        createTaskButton.action = #selector(presentCreateTask)
-        createTaskButton.target = self
+        searchBar = UISearchBar()
+        searchBar?.delegate = self
+    }
+
+    @IBAction func presentSearchBar(_ sender: UIBarButtonItem) {
+        searchBar?.showsCancelButton = true
+        searchBar?.becomeFirstResponder()
+
+        self.navigationItem.titleView = searchBar
+        self.navigationItem.setLeftBarButton(nil, animated: true)
     }
 
     //Opens up view to create a new task
-    @objc func presentCreateTask(_ sender: UIBarButtonItem) {
+    @IBAction func presentCreateTask(_ sender: UIBarButtonItem) {
         let storyBoard = UIStoryboard.init(name: "Main", bundle: nil)
         if let createVC =
             storyBoard.instantiateViewController(withIdentifier: "createTaskView") as? CreateTaskViewController {
@@ -62,14 +74,23 @@ class MainViewController: UITableViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        setupRealmDataSource(false)
+        setupRealmDataSource(false, nil)
     }
 
-    func setupRealmDataSource(_ isComplete: Bool) {
+    fileprivate func isOpenTaskTabSelected() -> Bool {
+        return self.segmentedControl?.selectedSegmentIndex == 0
+    }
+
+    fileprivate func setupRealmDataSource(_ isComplete: Bool, _ searchQuery: String?) {
         do {
             let realm = try Realm()
-            results = realm.objects(ToDoListItem.self).filter("isComplete = %@", isComplete)
+            results = realm.objects(ToDoListItem.self)
+                .filter("isComplete = %@", isComplete)
                 .sorted(byKeyPath: "dateToComplete", ascending: false)
+
+            if let searchQuery = searchQuery {
+                results = results?.filter("name CONTAINS %@", searchQuery)
+            }
 
             availableSections = [SectionTitle]() //resetting available sections list
             updatedSection = IndexPath()
@@ -205,8 +226,7 @@ class MainViewController: UITableViewController {
                             leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath)
         -> UISwipeActionsConfiguration? {
 
-            let actionTitle: String = segmentedControl?.selectedSegmentIndex == 0 ?
-                                      "Done" : "Not Done"
+            let actionTitle: String = isOpenTaskTabSelected() ? "Done" : "Not Done"
 
             let completedAction = UIContextualAction(style: .normal,
                                                   title: actionTitle) { (_, _, completionHandler) in
@@ -290,7 +310,7 @@ extension MainViewController: TaskCompletionDelegate {
 extension MainViewController: EmptyDataSetSource {
     func title(forEmptyDataSet scrollView: UIScrollView) -> NSAttributedString? {
         let noTasksText = String(format: "No %@ Tasks",
-                                 segmentedControl?.selectedSegmentIndex == 0 ? "Open" : "Completed")
+                                 isOpenTaskTabSelected() ? "Open" : "Completed")
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineBreakMode = .byWordWrapping
@@ -316,3 +336,25 @@ extension MainViewController: EmptyDataSetSource {
 }
 
 extension MainViewController: EmptyDataSetDelegate {}
+
+extension MainViewController: UISearchBarDelegate {
+
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.text = nil
+        searchBar.showsCancelButton = false
+
+        if searchBar.isFirstResponder {
+            searchBar.resignFirstResponder()
+        }
+
+        self.navigationItem.titleView = nil
+        self.navigationItem.setLeftBarButton(searchBarButton, animated: true)
+        self.setupRealmDataSource(!isOpenTaskTabSelected(), nil)
+    }
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        let searchQuery: String = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        setupRealmDataSource(!isOpenTaskTabSelected(), searchQuery.isEmpty ? nil : searchQuery)
+    }
+}

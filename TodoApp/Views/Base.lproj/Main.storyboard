@@ -84,12 +84,20 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="Things To Do" id="JEa-cf-2Yg">
+                        <barButtonItem key="leftBarButtonItem" systemItem="search" id="Zam-bi-W6U">
+                            <connections>
+                                <action selector="presentSearchBar:" destination="o7f-mI-0AW" id="MUP-Yt-akM"/>
+                            </connections>
+                        </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" systemItem="add" id="zsQ-E6-c5T">
                             <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            <connections>
+                                <action selector="presentCreateTask:" destination="o7f-mI-0AW" id="jRQ-oF-j1w"/>
+                            </connections>
                         </barButtonItem>
                     </navigationItem>
                     <connections>
-                        <outlet property="createTaskButton" destination="zsQ-E6-c5T" id="UBb-h6-Xtt"/>
+                        <outlet property="searchBarButton" destination="Zam-bi-W6U" id="jfP-cC-Mgq"/>
                         <outlet property="segmentedControl" destination="7LX-9q-ImP" id="STz-bQ-LuI"/>
                     </connections>
                 </tableViewController>
