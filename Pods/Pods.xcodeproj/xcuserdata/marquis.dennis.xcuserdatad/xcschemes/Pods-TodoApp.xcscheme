@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "AB83FD8D0FA1A827A87D95C45A88ABF8"
-               BuildableName = "EmptyDataSet_Swift.framework"
-               BlueprintName = "EmptyDataSet-Swift"
+               BlueprintIdentifier = "BF95678244581D49AAC063D7784186FC"
+               BuildableName = "Pods_TodoApp.framework"
+               BlueprintName = "Pods-TodoApp"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,9 +45,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "AB83FD8D0FA1A827A87D95C45A88ABF8"
-            BuildableName = "EmptyDataSet_Swift.framework"
-            BlueprintName = "EmptyDataSet-Swift"
+            BlueprintIdentifier = "BF95678244581D49AAC063D7784186FC"
+            BuildableName = "Pods_TodoApp.framework"
+            BlueprintName = "Pods-TodoApp"
             ReferencedContainer = "container:Pods.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

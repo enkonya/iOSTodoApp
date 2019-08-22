@@ -7,23 +7,12 @@
 //
 
 import UIKit
-import RealmSwift
 import EmptyDataSet_Swift
 
 class MainViewController: UITableViewController {
-    var notificationToken: NotificationToken?
-
-    var results: Results<ToDoListItem>?
-    var availableSections = [SectionTitle]()
-    var sectionTasks = [SectionTitle: [ToDoListItem]]()
-    var updatedSection: IndexPath?
     var searchBar: UISearchBar?
 
-    var todaysDate: Date = Calendar.current.startOfDay(for: Date())
-    var sevenDaysAwayDate: Date {
-        let tomorrowsDate = Calendar.current.date(byAdding: .day, value: 1, to: todaysDate )
-        return Calendar.current.date(byAdding: .day, value: 7, to: tomorrowsDate!)!
-    }
+    var viewModel = MainViewViewModel()
 
     @IBOutlet var searchBarButton: UIBarButtonItem!
     @IBOutlet weak var segmentedControl: UISegmentedControl?
@@ -32,19 +21,12 @@ class MainViewController: UITableViewController {
         return self.segmentedControl?.selectedSegmentIndex == 0
     }
 
-    fileprivate var queryText: String? {
-        if let text = self.searchBar?.text, !text.isEmpty {
-            return text
-        }
-        return nil
-    }
-
     @IBAction func indexChanged(_ sender: UISegmentedControl) {
         switch sender.selectedSegmentIndex {
         case 0:
-            setupRealmDataSource(false, queryText)
+            viewModel.set(queryText: self.searchBar?.text, isComplete: false)
         case 1:
-            setupRealmDataSource(true, queryText)
+            viewModel.set(queryText: self.searchBar?.text, isComplete: true)
         default:
             break
         }
@@ -57,6 +39,39 @@ class MainViewController: UITableViewController {
 
         searchBar = UISearchBar()
         searchBar?.delegate = self
+
+        viewModel.resultsDidChange = { [weak self] updateSections, error in
+          guard error == nil else {
+            // An error occurred while opening the Realm file on the background worker thread
+            let errorAlert = UIAlertController(title: "Error", message: "Error opening realm file",
+                                               preferredStyle: .alert)
+            errorAlert.addAction(UIAlertAction(title: "Dismiss", style: UIAlertAction.Style.default,
+                                               handler: nil))
+            self?.present(errorAlert, animated: true, completion: nil)
+
+            return
+          }
+
+          if updateSections {
+            self?.tableView.beginUpdates()
+            //deleting rows and empty sections
+            if let indexPath = self?.viewModel.updatedSection {
+              self?.tableView.deleteRows(at: [indexPath], with: .automatic)
+
+              let updatedSectionTitle: SectionTitle =
+                self?.viewModel.availableSections[indexPath.section] ?? SectionTitle.today
+              self?.viewModel.sectionTasks[updatedSectionTitle]?.remove(at: indexPath.row)
+
+              if let sectionItems = self?.viewModel.sectionTasks[updatedSectionTitle], sectionItems.isEmpty {
+                self?.viewModel.availableSections.remove(at: indexPath.section)
+                self?.tableView.deleteSections(IndexSet.init(integer: indexPath.section), with: .automatic)
+              }
+            }
+            self?.tableView.endUpdates()
+          } else {
+            self?.tableView.reloadData()
+          }
+       }
     }
 
     @IBAction func presentSearchBar(_ sender: UIBarButtonItem) {
@@ -80,136 +95,33 @@ class MainViewController: UITableViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        setupRealmDataSource(false, queryText)
-    }
-
-    fileprivate func setupRealmDataSource(_ isComplete: Bool, _ searchQuery: String?) {
-        do {
-            let realm = try Realm()
-            results = realm.objects(ToDoListItem.self)
-                .filter("isComplete = %@", isComplete)
-
-            if let searchQuery = searchQuery {
-                results = results?.filter("name CONTAINS %@", searchQuery)
-            }
-
-            results = results?.sorted(byKeyPath: "dateToComplete", ascending: false)
-
-            availableSections = [SectionTitle]() //resetting available sections list
-            updatedSection = IndexPath()
-
-            SectionTitle.allCases.forEach({ sectionTitle in
-                if sectionTasks[sectionTitle] == nil {
-                    sectionTasks[sectionTitle] = [ToDoListItem]()
-                }
-
-                fillSectionHelper(sectionTitle: sectionTitle)
-            })
-
-            // Observe Results Notifications
-            notificationToken = results?.observe { [weak self] (changes: RealmCollectionChange) in
-                guard let strongSelf = self else { return }
-                guard let tableView = self?.tableView else { return }
-
-                switch changes {
-                case .initial:
-                    // Results are now populated and can be accessed without blocking the UI
-                    tableView.reloadData()
-                case .update:
-                    tableView.beginUpdates()
-                    //deleting rows and empty sections
-                    if let indexPath = strongSelf.updatedSection {
-                        tableView.deleteRows(at: [indexPath], with: .automatic)
-
-                        let updatedSectionTitle: SectionTitle = strongSelf.availableSections[indexPath.section]
-                        strongSelf.sectionTasks[updatedSectionTitle]?.remove(at: indexPath.row)
-
-                        if let sectionItems = strongSelf.sectionTasks[updatedSectionTitle], sectionItems.isEmpty {
-                                strongSelf.availableSections.remove(at: indexPath.section)
-                                tableView.deleteSections(IndexSet.init(integer: indexPath.section), with: .automatic)
-                        }
-                    }
-                    tableView.endUpdates()
-                case .error:
-                    // An error occurred while opening the Realm file on the background worker thread
-                    let errorAlert = UIAlertController(title: "Error", message: "Error opening realm file",
-                                                       preferredStyle: .alert)
-                    errorAlert.addAction(UIAlertAction(title: "Dismiss", style: UIAlertAction.Style.default,
-                                                       handler: nil))
-                    self?.present(errorAlert, animated: true, completion: nil)
-                }
-            }
-        } catch {
-            print("Unable to initialize realm")
-        }
-    }
-
-    fileprivate func fillSectionHelper(sectionTitle: SectionTitle) {
-        switch sectionTitle {
-        case .older:
-            if let olderResults = results?.filter("dateToComplete < %@", todaysDate) {
-                fillSection(forSectionTitle: sectionTitle, withTasks: olderResults)
-            }
-        case .today:
-            if let todayResults = results?.filter("dateToComplete = %@", todaysDate) {
-                fillSection(forSectionTitle: sectionTitle, withTasks: todayResults)
-            }
-        case .nextseven:
-            if let nextSevenDaysResults = results?.filter("dateToComplete > %@ AND dateToComplete <= %@",
-                                                          todaysDate, sevenDaysAwayDate) {
-                fillSection(forSectionTitle: sectionTitle, withTasks: nextSevenDaysResults)
-            }
-        case .upcoming:
-            if let upcomingResults = results?.filter("dateToComplete > %@", sevenDaysAwayDate) {
-                fillSection(forSectionTitle: sectionTitle, withTasks: upcomingResults)
-            }
-        }
-    }
-
-    fileprivate func fillSection(forSectionTitle sectionTitle: SectionTitle,
-                                 withTasks sectionItems: Results<ToDoListItem>) {
-        if !sectionItems.isEmpty {
-            sectionTasks[sectionTitle] = Array(sectionItems)
-            availableSections.append(sectionTitle)
-        }
-    }
-
-    fileprivate func getItem(from indexPath: IndexPath) -> ToDoListItem? {
-        let sectionTitle = availableSections[indexPath.section]
-        let sectionItems = sectionTasks[sectionTitle]
-
-        return sectionItems?[indexPath.row]
+        viewModel.set(queryText: self.searchBar?.text, isComplete: false)
     }
 
     override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 44.0
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        notificationToken?.invalidate()
-    }
-
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return availableSections[section].description
+        return viewModel.availableSections[section].description
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return availableSections.count
+        return viewModel.availableSections.count
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let correctSection = availableSections[section]
-        return sectionTasks[correctSection]?.count ?? 0
+        let correctSection = viewModel.availableSections[section]
+        return viewModel.sectionTasks[correctSection]?.count ?? 0
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let taskItem = self.getItem(from: indexPath) else { return UITableViewCell() }
+        guard let taskItem = viewModel.getItem(from: indexPath) else { return UITableViewCell() }
 
         let cell = tableView.dequeueReusableCell(withIdentifier: "TaskCell") as? TaskTableViewCell
 
         cell?.taskName.text = taskItem.name
-        cell?.taskDate.text = taskItem.formatDateToComplete()
+        cell?.taskDate.text = taskItem.dateCompleted
 
         return cell ?? UITableViewCell()
     }
@@ -219,7 +131,8 @@ class MainViewController: UITableViewController {
         if segue.identifier == "segue" {
             if let indexPath = self.tableView.indexPathForSelectedRow {
                 let detailVC = segue.destination as? TaskDetailVC
-                detailVC?.taskItem = getItem(from: indexPath)
+                let taskItem = viewModel.getItem(from: indexPath)
+                detailVC?.id = taskItem?.id
             }
         }
     }
@@ -232,19 +145,8 @@ class MainViewController: UITableViewController {
             let actionTitle: String = isOpenTaskTabSelected ? "Done" : "Not Done"
 
             let completedAction = UIContextualAction(style: .normal,
-                                                  title: actionTitle) { (_, _, completionHandler) in
-                if let item = self.getItem(from: indexPath) {
-                    do {
-                        let realm = try Realm()
-                        try realm.write {
-                            item.isComplete = !item.isComplete
-                            item.dateCompleted = Date()
-                        }
-                        self.updatedSection = indexPath
-                    } catch {
-                        print("Unable to initialize realm")
-                    }
-                }
+                                                  title: actionTitle) { [weak self] (_, _, completionHandler) in
+                self?.viewModel.handleSwipeAction(for: indexPath)
                 completionHandler(true)
             }
             completedAction.backgroundColor = UIColor(red: 89/255, green: 87/255, blue: 153/255, alpha: 1)
@@ -262,17 +164,9 @@ class MainViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle,
                             forRowAt indexPath: IndexPath) {
 
-        if let item = self.getItem(from: indexPath), editingStyle == .delete {
-            do {
-                let realm = try Realm()
-                try realm.write {
-                    realm.delete(item)
-                }
-                updatedSection = indexPath
-            } catch {
-                print("Unable to initialize realm")
-            }
-        }
+      if editingStyle == .delete {
+        viewModel.handleEditingStyle(for: indexPath)
+      }
     }
 }
 
@@ -299,14 +193,7 @@ extension MainViewController: TaskCompletionDelegate {
                                            desc: taskDesc,
                                            dateToComplete: dateToComplete)
 
-        do {
-            let realm = try Realm()
-            try realm.write {
-                realm.add(newTodoListItem) //adding to realm
-            }
-        } catch {
-            print("Unable to initialize realm")
-        }
+        viewModel.save(item: newTodoListItem)
     }
 }
 
@@ -352,12 +239,11 @@ extension MainViewController: UISearchBarDelegate {
 
         self.navigationItem.titleView = nil
         self.navigationItem.setLeftBarButton(searchBarButton, animated: true)
-        self.setupRealmDataSource(!isOpenTaskTabSelected, nil)
+        viewModel.set(queryText: nil, isComplete: !isOpenTaskTabSelected)
     }
 
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         let searchQuery: String = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        setupRealmDataSource(!isOpenTaskTabSelected, searchQuery.isEmpty ? nil : searchQuery)
+        viewModel.set(queryText: searchQuery, isComplete: !isOpenTaskTabSelected)
     }
 }
