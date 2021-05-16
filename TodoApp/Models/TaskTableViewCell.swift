@@ -9,7 +9,6 @@
 import UIKit
 
 class TaskTableViewCell: UITableViewCell {
-
     @IBOutlet weak var taskName: UILabel!
     @IBOutlet weak var taskDate: UILabel!
 }
