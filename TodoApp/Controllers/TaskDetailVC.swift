@@ -11,21 +11,27 @@ import UIKit
 
 class TaskDetailVC: UIViewController {
 
+    // MARK: - Custom Views
+    
     @IBOutlet weak var taskName: UILabel!
     @IBOutlet weak var dateToComplete: UILabel!
     @IBOutlet weak var dateCompleted: UILabel!
     @IBOutlet weak var taskDescription: UITextView!
 
-    var taskItem: ToDoListItem?
+    // MARK: - Properties
+    
+    var taskItem: TaskItemDTO?
 
+    // MARK: - View Lifecycle
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-
+        
         if let taskItem = taskItem {
-            taskName.text = taskItem.name
-            dateToComplete.text = taskItem.formatDateToComplete()
-            dateCompleted.text = taskItem.formateDateCompleted()
-            taskDescription.text = taskItem.desc.isEmpty ? "No description" : taskItem.desc
+            self.taskName.text = taskItem.name
+            self.dateToComplete.text = taskItem.dateToComplete
+            self.dateCompleted.text = taskItem.dateCompleted
+            self.taskDescription.text = taskItem.desc.isEmpty ? "No description" : taskItem.desc
         } else {
             let errorAlert = UIAlertController(title: "Error", message: "Error displaying task details",
                                                preferredStyle: .alert)

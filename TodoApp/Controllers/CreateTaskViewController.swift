@@ -11,64 +11,52 @@ import RealmSwift
 
 class CreateTaskViewController: UIViewController {
 
+    // MARK: - Custom Views
+   
     @IBOutlet weak var nameTextField: UITextField!
     @IBOutlet weak var descriptionTextField: UITextField!
-    @IBOutlet weak var dateTextField: UITextField!
-
+    @IBOutlet weak var dateLabel: UILabel!
+    @IBOutlet weak var datePicker: UIDatePicker!
     @IBOutlet weak var saveButton: UIBarButtonItem!
-
+    
+    // MARK: - Properties
+    
     weak var delegate: TaskCompletionDelegate?
-    fileprivate var datePicker = UIDatePicker()
-
+    
     fileprivate var selectedDate: Date {
         return Calendar.current.startOfDay(for: datePicker.date)
     }
+    
+    // MARK: - View Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        saveButton.isEnabled = false
-
-        datePicker.datePickerMode = .date
-        datePicker.minimumDate = Calendar.current.startOfDay(for: Date())
-        datePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
-
-        dateTextField.text = ToDoListItem.format(date: Date())
-        dateTextField.inputView = datePicker
-        dateTextField.inputAccessoryView = datePickerToolbar
+        self.saveButton.isEnabled = false
+        self.datePicker.datePickerMode = .date
+        self.datePicker.minimumDate = Calendar.current.startOfDay(for: Date())
+        self.datePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
     }
-
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.dateLabel.text = TaskItemDTO.format(date: Date())
+        self.datePicker.isHidden = true
+    }
+    
+    // MARK: - Controller Actions
+    
+    @objc fileprivate func datePickerChanged() {
+        self.dateLabel.text = TaskItemDTO.format(date: self.selectedDate)
+        self.datePicker.isHidden = true
+    }
+    
+    @IBAction fileprivate func didTapDateLabel() {
+       self.datePicker.isHidden = !self.datePicker.isHidden
+    }
+   
     @IBAction func taskNameTextChanged(_ sender: UITextField) {
         let taskNameTrimmed: String = sender.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         saveButton.isEnabled = !taskNameTrimmed.isEmpty ? true : false
-    }
-
-    fileprivate var datePickerToolbar: UIToolbar = {
-        let toolbar = UIToolbar()
-        let cancelBarButtonItem = UIBarButtonItem(title: "Cancel", style: .plain,
-                                                  target: self, action: #selector(hideDatePicker))
-        let flexBarButtonItem = UIBarButtonItem(barButtonSystemItem: .flexibleSpace,
-                                                target: nil, action: nil)
-        let doneBarButtonItem = UIBarButtonItem(title: "Done", style: .done,
-                                                target: self, action: #selector(hideDatePicker))
-        toolbar.setItems([cancelBarButtonItem, flexBarButtonItem, doneBarButtonItem],
-                         animated: false)
-
-        toolbar.barStyle = .default
-        toolbar.tintColor = UIColor.black
-        toolbar.isTranslucent = false
-        toolbar.isUserInteractionEnabled = true
-        toolbar.sizeToFit()
-
-        return toolbar
-    }()
-
-    @objc fileprivate func datePickerChanged() {
-        dateTextField.text = ToDoListItem.format(date: selectedDate)
-    }
-
-    @objc fileprivate func hideDatePicker() {
-        self.view.endEditing(true)
     }
 
     @IBAction func cancelCreatingTask(_ sender: UIBarButtonItem) {
@@ -76,7 +64,7 @@ class CreateTaskViewController: UIViewController {
     }
 
     @IBAction func doneCreatingTask(_ sender: UIBarButtonItem) {
-        delegate?.onDone(taskName: nameTextField.text ?? "",
+        self.delegate?.onDone(taskName: nameTextField.text ?? "",
                          taskDesc: descriptionTextField.text ?? "",
                          dateToComplete: selectedDate)
 
@@ -84,6 +72,8 @@ class CreateTaskViewController: UIViewController {
     }
 }
 
-protocol TaskCompletionDelegate: class {
+// MARK: - Task Completion Delegate
+
+protocol TaskCompletionDelegate: AnyObject {
      func onDone(taskName: String, taskDesc: String, dateToComplete: Date)
 }
